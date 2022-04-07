@@ -13,10 +13,12 @@ testes são necessários, incluindo outros outros clientes além do celular.
 '''
 
 import network
+import ubinascii
 import json
 from mac import *
 import random
 
+MAC_ADDR = ubinascii.hexlify(network.WLAN().config('mac'), ':').decode()
 WAIT_TIME = 5  # tempo de espera de conexão a redes
 FILE = 'networks.json'  # arquivo com todas as redes salvas
 # esturura do arquivo: [[essid, senha], [essid, senha]]
@@ -32,7 +34,7 @@ def get_nws():
         return []
 
 
-def rmv_nw(eessid):
+def del_nw(essid):
     '''esquece rede selecionada'''
     nws = get_nws()
     for n in nws:

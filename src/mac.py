@@ -1,5 +1,3 @@
-''' Wrapper de machine, para NodeMCU e aplicações do projeto'''
-
 from machine import Pin
 import time
 

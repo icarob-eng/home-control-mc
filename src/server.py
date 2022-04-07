@@ -26,10 +26,15 @@ DISCONNECT_MSG = '!d'
 TOGGLE_LED_MSG = '!l'
 TOGGLE_RELAY_MSG = '!r:'  # depois colocar o número do relé
 PING_MSG = '!p'
+ADD_NW_MSG = '!addnw'
+''' Sintaxe de adição de rede: '!addnw-Nomedarede-senhadarede '''
+# provavelmente não é a ação mais segura
+DEL_NW_MSG = '!delnw'
+''' Sintaxe de remoção de rede: !delnw-Nomedarede '''
+
 
 # únicos que serão enviados pelo servidor:
-RESPONSE = 'OK'.encode(FORMAT)
-RESP_HEADER = '0002'.encode(FORMAT)
+RESPONSE = 'OK'
 
 MAX_CONN = 5
 
@@ -50,10 +55,16 @@ def start():
 
 
 def handle_client(conn, addr):
+    def send(msg):
+        '''manda cabeçalho e pacote, tendo conexão'''
+        size = str(len(msg))
+        conn.send(((HEADER-len(size))*'0' + size).encode(FORMAT))
+        conn.send(msg.encode(FORMAT))
+    
     blink()
     print('{} connected.'.format(addr))
-    conn.send(((HEADER-1)*'0' + '6').encode(FORMAT))  # header da mensagem 'Hello!'
-    conn.send('Hello!'.encode(FORMAT))  # primeira mensagem da comunicação
+    send('Hello!')  # primeira mensagem da comunicação
+    
     connected = True
     try:
         while connected:
@@ -63,26 +74,40 @@ def handle_client(conn, addr):
                 
                 if msg == DISCONNECT_MSG:
                     connected = False
+                    
                 elif msg == TOGGLE_LED_MSG:
                     tgl_led()
-                    conn.send(RESP_HEADER)
-                    conn.send(RESPONSE)
+                    send(RESPONSE)
+                    
                 elif msg == TOGGLE_RELAY_MSG + '1':
                     tgl_pin('d1')
-                    conn.send(RESP_HEADER)
-                    conn.send(RESPONSE)
+                    send(RESPONSE)
+  
                 elif msg == TOGGLE_RELAY_MSG + '2':
                     tgl_pin('d2')
-                    conn.send(RESP_HEADER)
-                    conn.send(RESPONSE)
+                    send(RESPONSE)
+                    
                 elif msg == PING_MSG:
                     print('ping')
-                    conn.send(((HEADER-1)*'0' + '4').encode(FORMAT))
-                    conn.send('pong'.encode(FORMAT))
+                    send('pong')
+                    
+                elif msg.split('-')[0] == ADD_NW_MSG:
+                    nwsetup.add_nw(
+                        msg.split('-')[1],
+                        msg.split('-')[2]
+                        )
+                    send('Rede {} adcionada.'.format(msg.split('-')[1]))
+                    
+                    
+                elif msg.split('-')[0] == DEL_NW_MSG:
+                    nwsetup.del_nw(msg.split('-')[1])
+                    send('Rede {} removida.'.format(msg.split('-')[1]))
+                    
                 else:
                     print('{}: {}'.format(addr, msg))
                     conn.send(RESP_HEADER)
                     conn.send(RESPONSE)
+                    
     except OSError:
         print('{} time out.'.format(addr))
     finally:
